@@ -241,7 +241,7 @@ qed
 lemma coh_uncurry_apply: "is_coh (uncurry f) \<longleftrightarrow> is_coh (flip f) \<and> is_coh f"
   using coh_uncurry_left coh_uncurry_right coh_uncurry_left_right by auto
 
-lemma coh_equalizer:
+lemma equalizer_of_coh:
   assumes "is_coh f" and "is_coh g" and "\<And>l. f (h l) = g (h l)"
   shows "\<And>d. f (fill h d) = g (fill h d)"
 proof -
