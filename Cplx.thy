@@ -128,7 +128,7 @@ next
   fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a \<times> 'b"
   fix d d' :: \<Delta>
   show "fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d' = fill (\<lambda>l. fill (hh l) d') d"
-    unfolding fill_prod comp_def by (simp add: prod_eq_iff, rule) (rule braid, rule braid)
+    unfolding fill_prod comp_def by (simp add: prod_eq_iff, rule) (rule braid)+
 qed
 
 end
@@ -272,14 +272,14 @@ locale relative =
     and monic :: "'\<Gamma> \<Rightarrow> \<Lambda>"
     and epic :: "\<Lambda> \<Rightarrow> '\<Gamma>"
     and bottom :: "'\<Xi> \<Rightarrow> \<Delta>"
-  assumes inv [simp]: "epci (monic a) = a"
+  assumes inv [simp]: "epic (monic a) = a"
     and square [simp]: "bottom (incl a) = emb (monic a)"
 begin
 
 definition ifill :: "['\<Gamma> \<Rightarrow> 'a, '\<Xi>] \<Rightarrow> 'a::cplx"
   where "ifill h b \<equiv> fill (h \<circ> epic) (bottom b)"
 
-lemma ifill_sec: "ifill h (incl l) = h l"
+lemma ifill_sec: "ifill h (incl c) = h c"
   unfolding ifill_def by simp
 
 lemma ifill_proj: "ifill (\<lambda>_. x) b = x"
