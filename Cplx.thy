@@ -295,3 +295,5 @@ lemma ifill_coh: "is_coh f \<Longrightarrow> ifill \<circ> comp f = comp f \<cir
   unfolding is_coh_def ifill_def comp_def by metis
 
 end
+
+end
