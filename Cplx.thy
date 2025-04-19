@@ -1,5 +1,5 @@
 theory Cplx
-  imports Main
+  imports "HOL-IMP.Star"
 begin
 
 section \<open>Theory of model complexes\<close>
@@ -7,19 +7,19 @@ section \<open>Theory of model complexes\<close>
 subsection \<open>Stuff missing from the standard library\<close>
 
 definition flip :: "[['a, 'b] \<Rightarrow> 'c, 'b, 'a] \<Rightarrow> 'c"
-  where "flip \<equiv> \<lambda>f x y. f y x"
+  where "flip = (\<lambda>f x y. f y x)"
 
 definition uncurry :: "[['a, 'b] \<Rightarrow> 'c, 'a \<times> 'b] \<Rightarrow> 'c"
-  where "uncurry \<equiv> \<lambda>f (x, y). f x y"
+  where "uncurry = (\<lambda>f (x, y). f x y)"
 
 definition join :: "[['a, 'a] \<Rightarrow> 'b, 'a] \<Rightarrow> 'b"
-  where "join \<equiv> \<lambda>f x. f x x"
+  where "join = (\<lambda>f x. f x x)"
 
 definition const :: "['a, 'b] \<Rightarrow> 'a"
-  where "const \<equiv> \<lambda>x _. x"
+  where "const = (\<lambda>x _. x)"
 
 definition dup :: "'a \<Rightarrow> 'a \<times> 'a"
-  where "dup \<equiv> \<lambda>x. (x, x)"
+  where "dup = (\<lambda>x. (x, x))"
 
 lemma flip_conv [simp]: "flip f x y = f y x"
   unfolding flip_def by rule
@@ -136,7 +136,7 @@ end
 subsection \<open>Coherent morphisms\<close>
 
 definition is_coh :: "('a::cplx \<Rightarrow> 'b::cplx) \<Rightarrow> bool"
-  where "is_coh f \<equiv> fill \<circ> comp f = comp f \<circ> fill"
+  where "is_coh f = (fill \<circ> comp f = comp f \<circ> fill)"
 
 lemma coh_id [simp]: "is_coh id"
   unfolding is_coh_def by fastforce
@@ -241,29 +241,59 @@ qed
 lemma coh_uncurry_apply: "is_coh (uncurry f) \<longleftrightarrow> is_coh (flip f) \<and> is_coh f"
   using coh_uncurry_left coh_uncurry_right coh_uncurry_left_right by auto
 
-lemma equalizer_of_coh:
-  assumes "is_coh f" and "is_coh g" and "\<And>l. f (h l) = g (h l)"
-  shows "\<And>d. f (fill h d) = g (fill h d)"
-proof -
-  fix d :: \<Delta>
-  have "f (fill h d) = fill (\<lambda>l. f (h l)) d" using assms(1) unfolding is_coh_def comp_def by metis
-  also have "... = fill (\<lambda>l. g (h l)) d" unfolding assms(3) by simp
-  also have "... = g (fill h d)" using assms(2) unfolding is_coh_def comp_def by metis
-  finally show "?thesis d" .
-qed
-
 subsection \<open>Making the subtype defined by coherence predicate into a complex\<close>
 
-lemma fill_coh_is_coh:
-  assumes "\<And>l. is_coh (h l)"
-  shows "\<And>d. is_coh (fill h d)"
-proof -
-  fix d :: \<Delta>
-  from assms have "is_coh (flip h)" using coh_flip by auto
-  hence "is_coh (flip (fill h))"
-    using coh_fill coh_comp_left_right unfolding comp_def fill_fun flip_def by fastforce
-  thus "?thesis d" using coh_flip by fastforce
+typedef (overloaded) ('a::cplx, 'b::cplx) mor = "{f::'a \<Rightarrow> 'b. is_coh f}"
+  morphisms raw_mor well_mor
+proof
+  fix x :: 'b
+  show "const x \<in> {f. is_coh f}" unfolding is_coh_def comp_def by simp (metis proj)
 qed
+
+type_notation
+  mor (infixr "\<rightarrow>" 10)
+
+notation
+  raw_mor (infixl "$" 70)
+
+setup_lifting type_definition_mor
+
+lift_definition fill_mor :: "[\<Lambda> \<Rightarrow> 'a::cplx \<rightarrow> 'b::cplx, \<Delta>] \<Rightarrow> 'a \<rightarrow> 'b" is fill
+proof -
+  fix h :: "[\<Lambda>, 'a] \<Rightarrow> 'b"
+  fix d :: \<Delta>
+  assume "\<And>x. is_coh (h x)"
+  hence "is_coh (flip h)" using coh_flip by auto
+  hence "is_coh (fill \<circ> flip h)" using coh_comp_left_right coh_fill by metis
+  hence "is_coh (flip (fill h))" unfolding comp_def flip_def fill_fun .
+  thus "is_coh (fill h d)" using coh_flip[of "fill h"] by simp
+qed
+
+instantiation mor :: (cplx, cplx) cplx
+begin
+
+definition fill_mor: "fill = fill_mor"
+
+instance proof
+  fix h :: "\<Lambda> \<Rightarrow> 'a \<rightarrow> 'b"
+  fix l :: \<Lambda>
+  show "fill h (emb l) = h l" unfolding fill_mor by transfer simp
+next
+  fix f :: "'a \<rightarrow> 'b"
+  fix d :: \<Delta>
+  show "fill (\<lambda>_. f) d = f" unfolding fill_mor by transfer simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a \<rightarrow> 'b"
+  fix d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" unfolding fill_mor by transfer simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a \<rightarrow> 'b"
+  fix d' d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" unfolding fill_mor
+    apply transfer by simp (rule braid)
+qed
+
+end
 
 subsection \<open>How complexes with different base arrows relate\<close>
 
@@ -277,7 +307,7 @@ locale relative =
 begin
 
 definition ifill :: "['\<Gamma> \<Rightarrow> 'a, '\<Xi>] \<Rightarrow> 'a::cplx"
-  where "ifill h b \<equiv> fill (h \<circ> epic) (bottom b)"
+  where "ifill h b = fill (h \<circ> epic) (bottom b)"
 
 lemma ifill_sec: "ifill h (incl c) = h c"
   unfolding ifill_def by simp
@@ -295,5 +325,95 @@ lemma ifill_coh: "is_coh f \<Longrightarrow> ifill \<circ> comp f = comp f \<cir
   unfolding is_coh_def ifill_def comp_def by metis
 
 end
+
+subsection \<open>The free model complex generated by an object\<close>
+
+datatype 'a free = From 'a | Fill "\<Lambda> \<Rightarrow> 'a free" \<Delta>
+
+inductive cplx_rel :: "['a free, 'a free] \<Rightarrow> bool" where
+sec_sat [simp]: "cplx_rel (Fill h (emb l)) (h l)" |
+proj_sat [simp]: "cplx_rel (Fill (\<lambda>_. x) d) x" |
+diag_sat [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda>l. hh l l) d)" |
+braid_sat [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
+Fill_cong: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
+cplx_refl: "cplx_rel x x" |
+cplx_sym: "cplx_rel x y \<Longrightarrow> cplx_rel y x" |
+cplx_trans: "\<lbrakk>cplx_rel x y; cplx_rel y z\<rbrakk> \<Longrightarrow> cplx_rel x z"
+
+quotient_type 'a model = "'a free" / cplx_rel
+  apply (rule equivpI)
+  unfolding reflp_def symp_def transp_def using cplx_refl cplx_sym cplx_trans by auto
+
+lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
+  by (erule Fill_cong)
+
+definition lift_free :: "['a \<Rightarrow> ('b::cplx), 'a free] \<Rightarrow> 'b"
+  where "lift_free f = rec_free f (\<lambda>h. fill (snd \<circ> h))"
+
+lemma lift_free_From [simp]: "lift_free f (From x) = f x"
+  unfolding lift_free_def by simp
+
+lemma lift_free_Fill [simp]: "lift_free f (Fill h d) = fill (\<lambda>l. lift_free f (h l)) d"
+  unfolding lift_free_def comp_def by simp
+
+lemma lift_free_cong: "cplx_rel x y \<Longrightarrow> lift_free f x = lift_free f y"
+proof (induction x y rule: cplx_rel.induct)
+  case (sec_sat h l)
+  then show ?case by simp
+next
+  case (proj_sat x d)
+  then show ?case by simp
+next
+  case (diag_sat hh d)
+  then show ?case by simp
+next
+  case (braid_sat hh d' d)
+  then show ?case by simp (rule braid)
+next
+  case (Fill_cong h h' d)
+  then show ?case by simp
+next
+  case (cplx_refl x)
+  then show ?case by simp
+next
+  case (cplx_sym x y)
+  then show ?case by simp
+next
+  case (cplx_trans x y z)
+  then show ?case by simp
+qed
+
+lift_definition lift_model :: "['a \<Rightarrow> ('b::cplx), 'a model] \<Rightarrow> 'b" is lift_free
+  by (erule lift_free_cong)
+
+instantiation model :: (type) cplx
+begin
+
+definition fill_model: "fill = fill_model"
+
+instance proof
+  fix h :: "\<Lambda> \<Rightarrow> 'a model"
+  fix l :: \<Lambda>
+  show "fill h (emb l) = h l" unfolding fill_model by transfer simp
+next
+  fix x :: "'a model"
+  fix d :: \<Delta>
+  show "fill (\<lambda>_. x) d = x" unfolding fill_model by transfer simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a model"
+  fix d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" unfolding fill_model by transfer simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a model"
+  fix d' d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" unfolding fill_model
+    by transfer simp
+qed
+
+lemma lift_lemma: "lift_model f (fill h d) = fill (\<lambda>l. lift_model f (h l)) d"
+  unfolding fill_model by transfer simp 
+
+lemma coh_lift_model_apply: "is_coh (lift_model (f::'a \<Rightarrow> 'b::cplx))"
+  unfolding is_coh_def comp_def using lift_lemma by metis
 
 end
