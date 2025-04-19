@@ -344,6 +344,8 @@ quotient_type 'a model = "'a free" / cplx_rel
   apply (rule equivpI)
   unfolding reflp_def symp_def transp_def using cplx_refl cplx_sym cplx_trans by auto
 
+lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
+
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
   by (erule Fill_cong)
 
@@ -410,10 +412,13 @@ next
     by transfer simp
 qed
 
-lemma lift_lemma: "lift_model f (fill h d) = fill (\<lambda>l. lift_model f (h l)) d"
-  unfolding fill_model by transfer simp 
-
 lemma coh_lift_model_apply: "is_coh (lift_model (f::'a \<Rightarrow> 'b::cplx))"
-  unfolding is_coh_def comp_def using lift_lemma by metis
+  unfolding is_coh_def comp_def fill_model by transfer simp
+
+lemma lift_to_model: "lift_model f \<circ> to_model = f"
+  apply transfer by rule simp
+
+lemma lift_model_unique: "\<lbrakk>is_coh g; g \<circ> to_model = f\<rbrakk> \<Longrightarrow> g = lift_model f"
+  sorry
 
 end
