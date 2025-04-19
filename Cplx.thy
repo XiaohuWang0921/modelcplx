@@ -98,7 +98,7 @@ next
 next
   fix hh :: "[\<Lambda>, \<Lambda>, 'a] \<Rightarrow> 'b"
   fix d d' :: \<Delta>
-  show "fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d' = fill (\<lambda>l. fill (hh l) d') d"
+  show "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'"
     unfolding fill_fun flip_def by rule (rule braid)
 qed
 
