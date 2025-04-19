@@ -361,8 +361,6 @@ lemma lift_free_From [simp]: "lift_free f (From x) = f x"
 lemma lift_free_Fill [simp]: "lift_free f (Fill h d) = fill (\<lambda>l. lift_free f (h l)) d"
   unfolding lift_free_def comp_def by simp
 
-thm free.induct
-
 lemma lift_free_unique:
   assumes "\<And>x. g (From x) = f x"
   assumes "\<And>h d. g (Fill h d) = fill (\<lambda>l. g (h l)) d"
