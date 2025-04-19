@@ -1,5 +1,5 @@
 theory Cplx
-  imports "HOL-IMP.Star"
+  imports Main
 begin
 
 section \<open>Theory of model complexes\<close>
