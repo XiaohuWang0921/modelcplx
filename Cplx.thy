@@ -320,6 +320,19 @@ proof (rule, rule, transfer)
   thus "fill (\<lambda>l. curry f (h l)) d = curry f (fill h d)" unfolding is_coh_def comp_def by metis
 qed
 
+lift_definition uncurry_mor :: "('a::cplx \<rightarrow> 'b::cplx \<rightarrow> 'c::cplx) \<Rightarrow> 'a \<times> 'b \<rightarrow> 'c"
+  is "\<lambda>f. uncurry (raw_mor \<circ> raw_mor f)"
+proof (rule coh_uncurry_left_right)
+  fix f :: "'a \<rightarrow> 'b \<rightarrow> 'c"
+  have "\<And>x. is_coh (raw_mor (f $ x))" using raw_mor by simp
+  thus "is_coh (flip (($) \<circ> ($) f))" using coh_flip by fastforce
+next
+  fix f :: "'a \<rightarrow> 'b \<rightarrow> 'c"
+  have "is_coh ($)" by (rule coh_raw_mor)
+  moreover have "is_coh (raw_mor f)" using raw_mor by simp
+  ultimately show "is_coh (($) \<circ> ($) f)" by (rule coh_comp_left_right)
+qed
+
 subsection \<open>How complexes with different base arrows relate\<close>
 
 locale relative =
