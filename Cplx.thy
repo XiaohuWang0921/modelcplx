@@ -394,10 +394,10 @@ quotient_type 'a model = "'a free" / cplx_rel
 lemma as_model_epic:
   assumes "f \<circ> as_model = g \<circ> as_model"
   shows "f = g"
-proof -
+proof
+  fix x
   from assms have "\<And>y. f (as_model y) = g (as_model y)" by (metis comp_apply)
-  hence "\<And>x. f x = g x" by (metis Quotient_abs_rep Quotient_model)
-  thus ?thesis by rule
+  thus "f x = g x" by (metis Quotient_abs_rep Quotient_model)
 qed
 
 lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
