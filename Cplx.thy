@@ -333,12 +333,18 @@ datatype 'a free = From 'a | Fill "\<Lambda> \<Rightarrow> 'a free" \<Delta>
 functor map_free by (simp_all add: free.map_id0 free.map_comp comp_def)
 
 inductive cplx_rel :: "['a free, 'a free] \<Rightarrow> bool" where
+
+(* Ensures axioms of a model complex are satisfied *)
 sec_sat [simp]: "cplx_rel (Fill h (emb l)) (h l)" |
 proj_sat [simp]: "cplx_rel (Fill (\<lambda>_. x) d) x" |
 diag_sat [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda>l. hh l l) d)" |
 braid_sat [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
+
+(* Ensures that Fill respects this relation, so the filler on the quotient is well defined *)
 Fill_cong: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
-cplx_refl: "cplx_rel x x" |
+
+(* Finally, ensures that we indeed have an equivalence relation *)
+cplx_refl [simp]: "cplx_rel x x" |
 cplx_sym: "cplx_rel x y \<Longrightarrow> cplx_rel y x" |
 cplx_trans: "\<lbrakk>cplx_rel x y; cplx_rel y z\<rbrakk> \<Longrightarrow> cplx_rel x z"
 
@@ -347,10 +353,25 @@ quotient_type 'a model = "'a free" / cplx_rel
   apply (rule equivpI)
   unfolding reflp_def symp_def transp_def using cplx_refl cplx_sym cplx_trans by auto
 
+lemma as_model_epic:
+  assumes "f \<circ> as_model = g \<circ> as_model"
+  shows "f = g"
+proof -
+  from assms have "\<And>y. f (as_model y) = g (as_model y)" by (metis comp_apply)
+  hence "\<And>x. f x = g x" by (metis Quotient_abs_rep Quotient_model)
+  thus ?thesis by rule
+qed
+
 lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
 
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
   by (erule Fill_cong)
+
+lemma as_model_From [simp]: "as_model (From x) = to_model x"
+  by transfer simp
+
+lemma as_model_Fill [simp]: "as_model (Fill h d) = fill_model (as_model \<circ> h) d"
+  unfolding comp_def by transfer simp
 
 definition lift_free :: "['a \<Rightarrow> ('b::cplx), 'a free] \<Rightarrow> 'b"
   where "lift_free f = rec_free f (\<lambda>h. fill (snd \<circ> h))"
@@ -426,5 +447,21 @@ lemma coh_lift_model_apply: "is_coh (lift_model (f::'a \<Rightarrow> 'b::cplx))"
 
 lemma lift_to_model: "lift_model f \<circ> to_model = f"
   apply transfer by rule simp
+
+lemma lift_model_unique:
+  assumes "is_coh (g::'a model \<Rightarrow> 'b::cplx)"
+  assumes "g \<circ> to_model = f"
+  shows "g = lift_model f"
+proof -
+  from assms(1) have "\<And>h d. fill (g \<circ> h) d = g (fill h d)"
+    unfolding is_coh_def comp_def by metis
+  hence "\<And>h d. fill (g \<circ> (as_model \<circ> h)) d = g (fill (as_model \<circ> h) d)" by simp
+  hence "\<And>h d. (g \<circ> as_model) (Fill h d) = fill (\<lambda>l. (g \<circ> as_model) (h l)) d"
+    unfolding fill_model by (simp add: comp_def)
+  moreover have "\<And>x. (g \<circ> as_model) (From x) = f x" using assms(2) by auto
+  ultimately have "\<And>x. (g \<circ> as_model) x = lift_free f x" by (metis lift_free_unique)
+  hence "g \<circ> as_model = lift_model f \<circ> as_model" unfolding comp_def by transfer auto
+  thus ?thesis by (rule as_model_epic)
+qed
 
 end
