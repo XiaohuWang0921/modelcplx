@@ -295,6 +295,31 @@ qed
 
 end
 
+lemma coh_raw_mor: "is_coh raw_mor" unfolding is_coh_def comp_def fill_mor
+  apply rule apply rule by transfer simp
+
+lift_definition curry_mor_right :: "('a::cplx \<times> 'b::cplx \<rightarrow> 'c::cplx) \<Rightarrow> 'a \<Rightarrow> 'b \<rightarrow> 'c" is curry
+proof -
+  fix f :: "'a \<times> 'b \<Rightarrow> 'c"
+  fix x :: 'a
+  assume "is_coh f"
+  hence "is_coh (uncurry (curry f))" by simp
+  hence "is_coh (flip (curry f))" by (rule coh_uncurry_right)
+  thus "?thesis f x" using coh_flip by fastforce
+qed
+
+lift_definition curry_mor :: "('a::cplx \<times> 'b::cplx \<rightarrow> 'c::cplx) \<Rightarrow> 'a \<rightarrow> 'b \<rightarrow> 'c" is curry_mor_right
+  unfolding is_coh_def comp_def fill_mor
+proof (rule, rule, transfer)
+  fix f :: "'a \<times> 'b \<Rightarrow> 'c"
+  fix h :: "\<Lambda> \<Rightarrow> 'a"
+  fix d :: \<Delta>
+  assume "is_coh f"
+  hence "is_coh (uncurry (curry f))" by simp
+  hence "is_coh (curry f)" by (rule coh_uncurry_left)
+  thus "fill (\<lambda>l. curry f (h l)) d = curry f (fill h d)" unfolding is_coh_def comp_def by metis
+qed
+
 subsection \<open>How complexes with different base arrows relate\<close>
 
 locale relative =
