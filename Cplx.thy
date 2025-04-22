@@ -373,13 +373,13 @@ functor map_free by (simp_all add: free.map_id0 free.map_comp comp_def)
 inductive cplx_rel :: "['a free, 'a free] \<Rightarrow> bool" where
 
 (* Ensures axioms of a model complex are satisfied *)
-sec_sat [simp]: "cplx_rel (Fill h (emb l)) (h l)" |
-proj_sat [simp]: "cplx_rel (Fill (\<lambda>_. x) d) x" |
-diag_sat [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda>l. hh l l) d)" |
-braid_sat [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
+cplx_sec [simp]: "cplx_rel (Fill h (emb l)) (h l)" |
+cplx_proj [simp]: "cplx_rel (Fill (\<lambda>_. x) d) x" |
+cplx_diag [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda>l. hh l l) d)" |
+cplx_braid [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
 
 (* Ensures that Fill respects this relation, so the filler on the quotient is well defined *)
-Fill_cong: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
+cplx_Fill_cong: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
 
 (* Finally, ensures that we indeed have an equivalence relation *)
 cplx_refl [simp]: "cplx_rel x x" |
@@ -403,7 +403,7 @@ qed
 lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
 
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
-  by (erule Fill_cong)
+  by (erule cplx_Fill_cong)
 
 lemma as_model_From [simp]: "as_model (From x) = to_model x"
   by transfer simp
@@ -428,19 +428,19 @@ lemma lift_free_unique:
 
 lemma lift_free_cong: "cplx_rel x y \<Longrightarrow> lift_free f x = lift_free f y"
 proof (induction x y rule: cplx_rel.induct)
-  case (sec_sat h l)
+  case (cplx_sec h l)
   then show ?case by simp
 next
-  case (proj_sat x d)
+  case (cplx_proj x d)
   then show ?case by simp
 next
-  case (diag_sat hh d)
+  case (cplx_diag hh d)
   then show ?case by simp
 next
-  case (braid_sat hh d' d)
+  case (cplx_braid hh d' d)
   then show ?case by simp (rule braid)
 next
-  case (Fill_cong h h' d)
+  case (cplx_Fill_cong h h' d)
   then show ?case by simp
 next
   case (cplx_refl x)
