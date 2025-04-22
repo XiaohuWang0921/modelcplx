@@ -396,7 +396,7 @@ lemma as_model_epic:
   shows "f = g"
 proof
   fix x
-  from assms have "\<And>y. f (as_model y) = g (as_model y)" by (metis comp_apply)
+  from assms have "\<And>y. f (as_model y) = g (as_model y)" unfolding comp_def by metis
   thus "f x = g x" by (metis Quotient_abs_rep Quotient_model)
 qed
 
@@ -487,8 +487,7 @@ lemma lift_to_model: "lift_model f \<circ> to_model = f"
   apply transfer by rule simp
 
 lemma lift_model_unique:
-  assumes "is_coh (g::'a model \<Rightarrow> 'b::cplx)"
-  assumes "g \<circ> to_model = f"
+  assumes "is_coh (g::'a model \<Rightarrow> 'b::cplx)" and "g \<circ> to_model = f"
   shows "g = lift_model f"
 proof -
   from assms(1) have "\<And>h d. fill (g \<circ> h) d = g (fill h d)"
