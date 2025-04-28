@@ -411,6 +411,77 @@ lemma as_model_From [simp]: "as_model (From x) = to_model x"
 lemma as_model_Fill [simp]: "as_model (Fill h d) = fill_model (as_model \<circ> h) d"
   unfolding comp_def by transfer simp
 
+instantiation model :: (type) cplx
+begin
+
+definition fill_model: "fill = fill_model"
+
+instance proof
+  fix h :: "\<Lambda> \<Rightarrow> 'a model"
+  fix l :: \<Lambda>
+  show "fill h (emb l) = h l" unfolding fill_model by transfer simp
+next
+  fix x :: "'a model"
+  fix d :: \<Delta>
+  show "fill (\<lambda>_. x) d = x" unfolding fill_model by transfer simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a model"
+  fix d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" unfolding fill_model by transfer simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a model"
+  fix d' d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" unfolding fill_model
+    by transfer simp
+qed
+
+subsection \<open>The operation of taking the free model complex of an object is a monad\<close>
+
+lemma map_free_cong: "cplx_rel x y \<Longrightarrow> cplx_rel (map_free f x) (map_free f y)"
+proof (induction x y rule: cplx_rel.induct)
+  case (cplx_sec h l)
+  then show ?case using cplx_rel.cplx_sec[of "map_free f \<circ> h" l] by simp
+next
+  case (cplx_proj x d)
+  then show ?case by (simp add: comp_def)
+next
+  case (cplx_diag hh d)
+  then show ?case using cplx_rel.cplx_diag[of "\<lambda>l l'. map_free f (hh l l')"] by (simp add: comp_def)
+next
+  case (cplx_braid hh d' d)
+  then show ?case by (simp add: comp_def)
+next
+  case (cplx_Fill_cong h h' d)
+  then show ?case by (simp add: comp_def cplx_rel.cplx_Fill_cong)
+next
+  case (cplx_refl x)
+  then show ?case by simp
+next
+  case (cplx_sym x y)
+  then show ?case by (simp add: cplx_rel.cplx_sym)
+next
+  case (cplx_trans x y z)
+  then show ?case using cplx_rel.cplx_trans[of "map_free f x"] by simp
+qed
+
+lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rightarrow> 'b model" is map_free
+  by (rule map_free_cong)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 definition lift_free :: "['a \<Rightarrow> ('b::cplx), 'a free] \<Rightarrow> 'b"
   where "lift_free f = rec_free f (\<lambda>h. fill (snd \<circ> h))"
 
@@ -455,30 +526,6 @@ qed
 
 lift_definition lift_model :: "['a \<Rightarrow> ('b::cplx), 'a model] \<Rightarrow> 'b" is lift_free
   by (erule lift_free_cong)
-
-instantiation model :: (type) cplx
-begin
-
-definition fill_model: "fill = fill_model"
-
-instance proof
-  fix h :: "\<Lambda> \<Rightarrow> 'a model"
-  fix l :: \<Lambda>
-  show "fill h (emb l) = h l" unfolding fill_model by transfer simp
-next
-  fix x :: "'a model"
-  fix d :: \<Delta>
-  show "fill (\<lambda>_. x) d = x" unfolding fill_model by transfer simp
-next
-  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a model"
-  fix d :: \<Delta>
-  show "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" unfolding fill_model by transfer simp
-next
-  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> 'a model"
-  fix d' d :: \<Delta>
-  show "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" unfolding fill_model
-    by transfer simp
-qed
 
 lemma coh_lift_model_apply: "is_coh (lift_model (f::'a \<Rightarrow> 'b::cplx))"
   unfolding is_coh_def comp_def fill_model by transfer simp
