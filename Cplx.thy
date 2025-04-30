@@ -467,7 +467,16 @@ qed
 lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rightarrow> 'b model" is map_free
   by (rule map_free_cong)
 
+definition join_free :: "'a free free \<Rightarrow> 'a free"
+  where "join_free = rec_free id (\<lambda>h. Fill (snd \<circ> h))"
 
+lemma join_free_From: "join_free (From x) = x" unfolding join_free_def by simp
+
+lemma join_free_Fill: "join_free (Fill h d) = Fill (\<lambda>l. join_free (h l)) d"
+  unfolding join_free_def comp_def by simp
+
+lift_definition join_free_model :: "'a model free \<Rightarrow> 'a model" is join_free
+  sorry
 
 
 
