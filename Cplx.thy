@@ -379,7 +379,7 @@ cplx_diag [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda
 cplx_braid [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
 
 (* Ensures that Fill respects this relation, so the filler on the quotient is well defined *)
-cplx_Fill_cong: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
+cplx_Fill_cong [simp]: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
 
 (* Finally, ensures that we indeed have an equivalence relation *)
 cplx_refl [simp]: "cplx_rel x x" |
@@ -452,7 +452,7 @@ next
   then show ?case by (simp add: comp_def)
 next
   case (cplx_Fill_cong h h' d)
-  then show ?case by (simp add: comp_def cplx_rel.cplx_Fill_cong)
+  then show ?case by (simp add: comp_def)
 next
   case (cplx_refl x)
   then show ?case by simp
@@ -461,7 +461,7 @@ next
   then show ?case by (simp add: cplx_rel.cplx_sym)
 next
   case (cplx_trans x y z)
-  then show ?case using cplx_rel.cplx_trans[of "map_free f x"] by simp
+  then show ?case by (simp add: cplx_rel.cplx_trans[of "map_free f x"])
 qed
 
 lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rightarrow> 'b model" is map_free
@@ -470,15 +470,49 @@ lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rig
 definition join_free :: "'a free free \<Rightarrow> 'a free"
   where "join_free = rec_free id (\<lambda>h. Fill (snd \<circ> h))"
 
-lemma join_free_From: "join_free (From x) = x" unfolding join_free_def by simp
+lemma join_free_From [simp]: "join_free (From x) = x" unfolding join_free_def by simp
 
-lemma join_free_Fill: "join_free (Fill h d) = Fill (\<lambda>l. join_free (h l)) d"
+lemma join_free_Fill [simp]: "join_free (Fill h d) = Fill (\<lambda>l. join_free (h l)) d"
   unfolding join_free_def comp_def by simp
 
-lift_definition join_free_model :: "'a model free \<Rightarrow> 'a model" is join_free
-  sorry
+lemma join_free_cong_outer: "cplx_rel x y \<Longrightarrow> cplx_rel (join_free x) (join_free y)"
+proof (induction x y rule: cplx_rel.induct)
+  case (cplx_sec h l)
+  then show ?case by simp (rule cplx_rel.cplx_sec)
+next
+  case (cplx_proj x d)
+  then show ?case by simp
+next
+  case (cplx_diag hh d)
+  then show ?case by simp (rule cplx_rel.cplx_diag)
+next
+  case (cplx_braid hh d' d)
+  then show ?case by simp
+next
+  case (cplx_Fill_cong h h' d)
+  then show ?case by simp
+next
+  case (cplx_refl x)
+  then show ?case by simp
+next
+  case (cplx_sym x y)
+  then show ?case by (simp add: cplx_rel.cplx_sym)
+next
+  case (cplx_trans x y z)
+  then show ?case by (simp add: cplx_rel.cplx_trans[of "join_free x"])
+qed
 
+lemma join_free_cong_inner: "rel_free cplx_rel x y \<Longrightarrow> cplx_rel (join_free x) (join_free y)"
+proof (induction x y rule: free.rel_induct)
+  case (From x y)
+  then show ?case by simp
+next
+  case (Fill h d h' d')
+  then show ?case by (simp add: rel_fun_def)
+qed
 
+lift_definition join_model_free :: "'a model free \<Rightarrow> 'a model" is join_free
+  by (rule join_free_cong_inner)
 
 
 
