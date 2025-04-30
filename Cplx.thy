@@ -515,14 +515,20 @@ next
   then show ?case by simp
 qed
 
+lemma join_free_map: "is_coh f \<Longrightarrow> join_free (map_free f x) = f (join_free x)"
+  unfolding is_coh_def comp_def apply (induction x) by simp_all metis
+  
+
+
 lift_definition join_model :: "'a::cplx model \<Rightarrow> 'a" is join_free
   by (rule join_free_cong)
 
 lemma to_model_natural: "map_model f \<circ> to_model = to_model \<circ> f"
   apply rule by transfer simp
 
-lemma join_model_natural: "join_model \<circ> map_model (map_model f) = map_model f \<circ> join_model"
-  sorry
+lemma join_model_natural: "is_coh f \<Longrightarrow> join_model \<circ> map_model f = f \<circ> join_model"
+  apply transfer apply rule by simp (rule join_free_map)
+  
 
 
 
