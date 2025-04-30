@@ -435,6 +435,8 @@ next
     by transfer simp
 qed
 
+end
+
 subsection \<open>The operation of taking the free model complex of an object is a monad\<close>
 
 lemma map_free_cong: "cplx_rel x y \<Longrightarrow> cplx_rel (map_free f x) (map_free f y)"
@@ -467,27 +469,38 @@ qed
 lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rightarrow> 'b model" is map_free
   by (rule map_free_cong)
 
-definition join_free :: "'a free free \<Rightarrow> 'a free"
-  where "join_free = rec_free id (\<lambda>h. Fill (snd \<circ> h))"
+lemma map_model_comp: "map_model (f \<circ> g) = map_model f \<circ> map_model g"
+  apply rule by transfer (simp add: free.map_comp)
+
+lemma map_model_id: "map_model id = id"
+  apply rule by transfer (simp add: free.map_id)
+
+functor map_model by (simp_all add: map_model_comp map_model_id)
+
+lemma coh_map_model: "is_coh (map_model f)"
+  unfolding is_coh_def fill_model comp_def apply rule apply rule by transfer simp
+
+definition join_free :: "'a::cplx free \<Rightarrow> 'a"
+  where "join_free = rec_free id (\<lambda>h. fill (snd \<circ> h))"
 
 lemma join_free_From [simp]: "join_free (From x) = x" unfolding join_free_def by simp
 
-lemma join_free_Fill [simp]: "join_free (Fill h d) = Fill (\<lambda>l. join_free (h l)) d"
+lemma join_free_Fill [simp]: "join_free (Fill h d) = fill (\<lambda>l. join_free (h l)) d"
   unfolding join_free_def comp_def by simp
 
-lemma join_free_cong_outer: "cplx_rel x y \<Longrightarrow> cplx_rel (join_free x) (join_free y)"
+lemma join_free_cong: "cplx_rel x y \<Longrightarrow> join_free x = join_free y"
 proof (induction x y rule: cplx_rel.induct)
   case (cplx_sec h l)
-  then show ?case by simp (rule cplx_rel.cplx_sec)
+  then show ?case by simp
 next
   case (cplx_proj x d)
   then show ?case by simp
 next
   case (cplx_diag hh d)
-  then show ?case by simp (rule cplx_rel.cplx_diag)
+  then show ?case by simp
 next
   case (cplx_braid hh d' d)
-  then show ?case by simp
+  then show ?case by simp (rule braid)
 next
   case (cplx_Fill_cong h h' d)
   then show ?case by simp
@@ -496,29 +509,20 @@ next
   then show ?case by simp
 next
   case (cplx_sym x y)
-  then show ?case by (simp add: cplx_rel.cplx_sym)
-next
-  case (cplx_trans x y z)
-  then show ?case by (simp add: cplx_rel.cplx_trans[of "join_free x"])
-qed
-
-lemma join_free_cong_inner: "rel_free cplx_rel x y \<Longrightarrow> cplx_rel (join_free x) (join_free y)"
-proof (induction x y rule: free.rel_induct)
-  case (From x y)
   then show ?case by simp
 next
-  case (Fill h d h' d')
-  then show ?case by (simp add: rel_fun_def)
+  case (cplx_trans x y z)
+  then show ?case by simp
 qed
 
-lift_definition join_model_free :: "'a model free \<Rightarrow> 'a model" is join_free
-  by (rule join_free_cong_inner)
+lift_definition join_model :: "'a::cplx model \<Rightarrow> 'a" is join_free
+  by (rule join_free_cong)
 
+lemma to_model_natural: "map_model f \<circ> to_model = to_model \<circ> f"
+  apply rule by transfer simp
 
-
-
-
-
+lemma join_model_natural: "join_model \<circ> map_model (map_model f) = map_model f \<circ> join_model"
+  sorry
 
 
 
