@@ -70,9 +70,9 @@ axiomatization emb :: "\<Lambda> \<Rightarrow> \<Delta>"
 class cplx =
   fixes fill :: "[\<Lambda> \<Rightarrow> 'a, \<Delta>] \<Rightarrow> 'a"
   assumes sec [simp]: "fill h (emb l) = h l"
-      and proj [simp]: "fill (\<lambda>_. x) d = x" (* Weakening *)
-      and diag [simp]: "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" (* Contraction *)
-      and braid: "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" (* Permutation *)
+  assumes proj [simp]: "fill (\<lambda>_. x) d = x" (* Weakening *)
+  assumes diag [simp]: "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" (* Contraction *)
+  assumes braid: "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" (* Permutation *)
         (* Can't make braid a [simp] because it causes cycle *)
 
 subsection \<open>Obvious constructions\<close>
@@ -403,7 +403,7 @@ qed
 lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
 
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
-  by (erule cplx_Fill_cong)
+  by (rule cplx_Fill_cong)
 
 lemma as_model_From [simp]: "as_model (From x) = to_model x"
   by transfer simp
@@ -472,10 +472,10 @@ lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rig
 lemma map_model_comp: "map_model (f \<circ> g) = map_model f \<circ> map_model g"
   apply rule by transfer (simp add: free.map_comp)
 
-lemma map_model_id: "map_model id = id"
+lemma map_model_id [simp]: "map_model id = id"
   apply rule by transfer (simp add: free.map_id)
 
-functor map_model by (simp_all add: map_model_comp map_model_id)
+functor map_model by (simp_all add: map_model_comp)
 
 lemma coh_map_model: "is_coh (map_model f)"
   unfolding is_coh_def fill_model comp_def apply rule apply rule by transfer simp
@@ -517,18 +517,71 @@ qed
 
 lemma join_free_map: "is_coh f \<Longrightarrow> join_free (map_free f x) = f (join_free x)"
   unfolding is_coh_def comp_def apply (induction x) by simp_all metis
-  
-
 
 lift_definition join_model :: "'a::cplx model \<Rightarrow> 'a" is join_free
   by (rule join_free_cong)
 
+lemma coh_join_model: "is_coh join_model"
+  unfolding is_coh_def fill_model comp_def by transfer simp
+
 lemma to_model_natural: "map_model f \<circ> to_model = to_model \<circ> f"
   apply rule by transfer simp
 
-lemma join_model_natural: "is_coh f \<Longrightarrow> join_model \<circ> map_model f = f \<circ> join_model"
+lemma join_model_comp_map: "is_coh f \<Longrightarrow> join_model \<circ> map_model f = f \<circ> join_model"
   apply transfer apply rule by simp (rule join_free_map)
   
+lemma join_model_natural: "join_model \<circ> map_model (map_model f) = map_model f \<circ> join_model"
+  by (rule join_model_comp_map) (rule coh_map_model)
+
+lemma join_model_assoc: "join_model \<circ> map_model join_model = join_model \<circ> join_model"
+  by (rule join_model_comp_map) (rule coh_join_model)
+
+lemma to_left_unit_join: "join_model \<circ> to_model = id"
+  apply transfer by rule simp
+
+lemma join_free_map_to: "join_free (map_free to_model x) = as_model x"
+  by (induction x) (simp_all add: fill_model comp_def)
+
+lemma to_right_unit_join: "join_model \<circ> map_model to_model = id"
+proof -
+  thm join_model.abs_eq
+  have "\<And>x. join_free (map_free to_model x) = as_model x" by (rule join_free_map_to)
+  hence "\<And>x. join_model (as_model (map_free to_model x)) = as_model x"
+    by (simp add: join_model.abs_eq)
+  hence "\<And>x. join_model (map_model to_model (as_model x)) = as_model x"
+    by (simp add: map_model.abs_eq)
+  hence "join_model \<circ> map_model to_model \<circ> as_model = id \<circ> as_model" unfolding comp_def by auto
+  thus ?thesis by (rule as_model_epic)
+qed
+
+class model_alg =
+  fixes act :: "'a model \<Rightarrow> 'a"
+  assumes action [simp]: "act (map_model act m) = act (join_model m)"
+  assumes unit [simp]: "act (to_model x) = x"
+
+datatype 'a wrap = Wrap (unwrap: 'a)
+
+lemma Wrap_unwrap [simp]: "Wrap \<circ> unwrap = id" by auto
+
+lemma unwrap_Wrap [simp]: "unwrap \<circ> Wrap = id" by auto
+
+instantiation wrap :: (cplx) model_alg
+begin
+
+definition act_wrap: "act = Wrap \<circ> join_model \<circ> map_model unwrap"
+
+instance proof
+  fix m :: "'a wrap model model" 
+  have "join_model \<circ> map_model (join_model \<circ> map_model unwrap) = join_model \<circ> map_model unwrap \<circ> join_model" sorry
+  show "act (map_model act m) = act (join_model m)" unfolding act_wrap apply simp sorry
+next
+  fix x :: "'a wrap"
+  show "act (to_model x) = x" sorry
+qed
+
+
+
+
 
 
 
@@ -578,7 +631,7 @@ next
 qed
 
 lift_definition lift_model :: "['a \<Rightarrow> ('b::cplx), 'a model] \<Rightarrow> 'b" is lift_free
-  by (erule lift_free_cong)
+  by (rule lift_free_cong)
 
 lemma coh_lift_model_apply: "is_coh (lift_model (f::'a \<Rightarrow> 'b::cplx))"
   unfolding is_coh_def comp_def fill_model by transfer simp
