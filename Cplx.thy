@@ -477,6 +477,10 @@ lemma map_model_id [simp]: "map_model id = id"
 
 functor map_model by (simp_all add: map_model_comp)
 
+lemma map_model_to [simp]: "map_model f (to_model x) = to_model (f x)" by transfer simp
+lemma map_model_fill [simp]: "map_model f (fill_model h d) = fill_model (\<lambda>l. map_model f (h l)) d"
+  by transfer simp
+
 lemma coh_map_model: "is_coh (map_model f)"
   unfolding is_coh_def fill_model comp_def apply rule apply rule by transfer simp
 
@@ -521,6 +525,10 @@ lemma join_free_map: "is_coh f \<Longrightarrow> join_free (map_free f x) = f (j
 lift_definition join_model :: "'a::cplx model \<Rightarrow> 'a" is join_free
   by (rule join_free_cong)
 
+lemma join_model_to [simp]: "join_model (to_model x) = x" by transfer simp
+lemma join_model_fill [simp]: "join_model (fill_model h d) = fill (\<lambda>l. join_model (h l)) d"
+  by transfer simp
+
 lemma coh_join_model: "is_coh join_model"
   unfolding is_coh_def fill_model comp_def by transfer simp
 
@@ -544,7 +552,6 @@ lemma join_free_map_to: "join_free (map_free to_model x) = as_model x"
 
 lemma to_right_unit_join: "join_model \<circ> map_model to_model = id"
 proof -
-  thm join_model.abs_eq
   have "\<And>x. join_free (map_free to_model x) = as_model x" by (rule join_free_map_to)
   hence "\<And>x. join_model (as_model (map_free to_model x)) = as_model x"
     by (simp add: join_model.abs_eq)
@@ -554,104 +561,63 @@ proof -
   thus ?thesis by (rule as_model_epic)
 qed
 
-class model_alg =
+subsection \<open>Every model complex is an algebra over this monad and every coherent morphism is a homomorphism between algebras\<close>
+
+term join_model
+
+thm join_model_assoc
+
+thm to_left_unit_join
+
+thm join_model_comp_map
+
+subsection \<open>Every algebra over this monad is a model complex\<close>
+
+locale model_alg =
   fixes act :: "'a model \<Rightarrow> 'a"
   assumes action [simp]: "act (map_model act m) = act (join_model m)"
   assumes unit [simp]: "act (to_model x) = x"
 
-datatype 'a wrap = Wrap (unwrap: 'a)
-
-lemma Wrap_unwrap [simp]: "Wrap \<circ> unwrap = id" by auto
-
-lemma unwrap_Wrap [simp]: "unwrap \<circ> Wrap = id" by auto
-
-instantiation wrap :: (cplx) model_alg
 begin
 
-definition act_wrap: "act = Wrap \<circ> join_model \<circ> map_model unwrap"
+definition mfill :: "[\<Lambda> \<Rightarrow> 'a, \<Delta>] \<Rightarrow> 'a"
+  where "mfill h d = act (fill (to_model \<circ> h) d)"
 
-instance proof
-  fix m :: "'a wrap model model" 
-  have "join_model \<circ> map_model (join_model \<circ> map_model unwrap) = join_model \<circ> map_model unwrap \<circ> join_model" sorry
-  show "act (map_model act m) = act (join_model m)" unfolding act_wrap apply simp sorry
-next
-  fix x :: "'a wrap"
-  show "act (to_model x) = x" sorry
-qed
+lemma mfill_sec: "mfill h (emb l) = h l" unfolding mfill_def by simp
 
+lemma mfill_proj: "mfill (\<lambda>_. x) d = x" unfolding mfill_def comp_def by simp
 
-
-
-
-
-
-
-
-
-definition lift_free :: "['a \<Rightarrow> ('b::cplx), 'a free] \<Rightarrow> 'b"
-  where "lift_free f = rec_free f (\<lambda>h. fill (snd \<circ> h))"
-
-lemma lift_free_From [simp]: "lift_free f (From x) = f x"
-  unfolding lift_free_def by simp
-
-lemma lift_free_Fill [simp]: "lift_free f (Fill h d) = fill (\<lambda>l. lift_free f (h l)) d"
-  unfolding lift_free_def comp_def by simp
-
-lemma lift_free_unique:
-  assumes "\<And>x. g (From x) = f x"
-  assumes "\<And>h d. g (Fill h d) = fill (\<lambda>l. g (h l)) d"
-  shows "g x = lift_free f x"
-  by (induction x) (simp_all add: assms)
-
-lemma lift_free_cong: "cplx_rel x y \<Longrightarrow> lift_free f x = lift_free f y"
-proof (induction x y rule: cplx_rel.induct)
-  case (cplx_sec h l)
-  then show ?case by simp
-next
-  case (cplx_proj x d)
-  then show ?case by simp
-next
-  case (cplx_diag hh d)
-  then show ?case by simp
-next
-  case (cplx_braid hh d' d)
-  then show ?case by simp (rule braid)
-next
-  case (cplx_Fill_cong h h' d)
-  then show ?case by simp
-next
-  case (cplx_refl x)
-  then show ?case by simp
-next
-  case (cplx_sym x y)
-  then show ?case by simp
-next
-  case (cplx_trans x y z)
-  then show ?case by simp
-qed
-
-lift_definition lift_model :: "['a \<Rightarrow> ('b::cplx), 'a model] \<Rightarrow> 'b" is lift_free
-  by (rule lift_free_cong)
-
-lemma coh_lift_model_apply: "is_coh (lift_model (f::'a \<Rightarrow> 'b::cplx))"
-  unfolding is_coh_def comp_def fill_model by transfer simp
-
-lemma lift_to_model: "lift_model f \<circ> to_model = f"
-  apply transfer by rule simp
-
-lemma lift_model_unique:
-  assumes "is_coh (g::'a model \<Rightarrow> 'b::cplx)" and "g \<circ> to_model = f"
-  shows "g = lift_model f"
+lemma mfill_diag: "mfill (\<lambda>l. mfill (hh l) d) d = mfill (\<lambda>l. hh l l) d"
+  unfolding mfill_def comp_def
 proof -
-  from assms(1) have "\<And>h d. fill (g \<circ> h) d = g (fill h d)"
-    unfolding is_coh_def comp_def by metis
-  hence "\<And>h d. fill (g \<circ> (as_model \<circ> h)) d = g (fill (as_model \<circ> h) d)" by simp
-  hence "\<And>h d. (g \<circ> as_model) (Fill h d) = fill (\<lambda>l. (g \<circ> as_model) (h l)) d"
-    unfolding fill_model by (simp add: comp_def)
-  moreover have "\<And>x. (g \<circ> as_model) (From x) = f x" using assms(2) by auto
-  ultimately have "\<And>x. (g \<circ> as_model) x = lift_free f x" by (metis lift_free_unique)
-  hence "g \<circ> as_model = lift_model f \<circ> as_model" unfolding comp_def by transfer auto
-  thus ?thesis by (rule as_model_epic)
+  have "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d))) d) = act (map_model act (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l l')) d)) d))"
+    unfolding fill_model by simp
+  also have "... = act (join_model (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l l')) d)) d))"
+    by simp
+  also have "... = act (fill (\<lambda>l. fill (\<lambda>l'. to_model (hh l l')) d) d)" by (simp add: fill_model)
+  also have "... = act (fill (\<lambda>l. to_model (hh l l)) d)" by simp
+  finally show "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d))) d) = act (fill (\<lambda>l. to_model (hh l l)) d)" .
 qed
+
+lemma mfill_braid: "mfill (\<lambda>l. mfill (hh l) d') d = mfill (\<lambda>l. mfill (\<lambda>l'. hh l' l) d) d'"
+  unfolding mfill_def comp_def
+proof -
+  have "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d'))) d) = act (map_model act (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l l')) d')) d))"
+    unfolding fill_model by simp
+  also have "... = act (join_model (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l l')) d')) d))"
+    by simp
+  also have "... = act (fill (\<lambda>l. fill (\<lambda>l'. to_model (hh l l')) d') d)" by (simp add: fill_model)
+  also have "... = act (fill (\<lambda>l. fill (\<lambda>l'. to_model (hh l' l)) d) d')"
+    apply (rule cong[of act]) by simp (rule braid)
+  also have "... = act (join_model (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l' l)) d)) d'))"
+    by (simp add: fill_model)
+  also have "... = act (map_model act (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l' l)) d)) d'))"
+    by simp
+  also have "... = act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l' l)) d))) d')"
+    unfolding fill_model by simp
+  finally show "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d'))) d) = act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l' l)) d))) d')" .
+qed
+
+end
 
 end
