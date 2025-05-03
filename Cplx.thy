@@ -588,15 +588,15 @@ locale model_alg =
 
 begin
 
-definition mfill :: "[\<Lambda> \<Rightarrow> 'a, \<Delta>] \<Rightarrow> 'a"
-  where "mfill h d = act (fill (to_model \<circ> h) d)"
+definition afill :: "[\<Lambda> \<Rightarrow> 'a, \<Delta>] \<Rightarrow> 'a"
+  where "afill h d = act (fill (to_model \<circ> h) d)"
 
-lemma mfill_sec: "mfill h (emb l) = h l" unfolding mfill_def by simp
+lemma afill_sec: "afill h (emb l) = h l" unfolding afill_def by simp
 
-lemma mfill_proj: "mfill (\<lambda>_. x) d = x" unfolding mfill_def comp_def by simp
+lemma afill_proj: "afill (\<lambda>_. x) d = x" unfolding afill_def comp_def by simp
 
-lemma mfill_diag: "mfill (\<lambda>l. mfill (hh l) d) d = mfill (\<lambda>l. hh l l) d"
-  unfolding mfill_def comp_def
+lemma afill_diag: "afill (\<lambda>l. afill (hh l) d) d = afill (\<lambda>l. hh l l) d"
+  unfolding afill_def comp_def
 proof -
   have "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d))) d) = act (map_model act (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l l')) d)) d))"
     unfolding fill_model by simp
@@ -607,8 +607,8 @@ proof -
   finally show "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d))) d) = act (fill (\<lambda>l. to_model (hh l l)) d)" .
 qed
 
-lemma mfill_braid: "mfill (\<lambda>l. mfill (hh l) d') d = mfill (\<lambda>l. mfill (\<lambda>l'. hh l' l) d) d'"
-  unfolding mfill_def comp_def
+lemma afill_braid: "afill (\<lambda>l. afill (hh l) d') d = afill (\<lambda>l. afill (\<lambda>l'. hh l' l) d) d'"
+  unfolding afill_def comp_def
 proof -
   have "act (fill (\<lambda>l. to_model (act (fill (\<lambda>l'. to_model (hh l l')) d'))) d) = act (map_model act (fill (\<lambda>l. to_model (fill (\<lambda>l'. to_model (hh l l')) d')) d))"
     unfolding fill_model by simp
@@ -632,12 +632,12 @@ subsection \<open>And every homomorphism between algebras is a coherent morphism
 
 locale model_alg_hom =
   act: model_alg act + act': model_alg act' for act act' +
-fixes f
+fixes f :: "'a \<Rightarrow> 'b"
 assumes hom: "act' (map_model f x) = f (act x)"
 begin
 
-lemma coh_f: "act'.mfill \<circ> comp f = comp f \<circ> act.mfill"
-  unfolding act.mfill_def act'.mfill_def comp_def fill_model
+lemma coh_f: "act'.afill \<circ> comp f = comp f \<circ> act.afill"
+  unfolding act.afill_def act'.afill_def comp_def fill_model
 proof (rule; rule)
   fix h :: "\<Lambda> \<Rightarrow> 'a"
   fix d :: \<Delta>
