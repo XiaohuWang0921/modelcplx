@@ -387,16 +387,16 @@ cplx_sym: "cplx_rel x y \<Longrightarrow> cplx_rel y x" |
 cplx_trans: "\<lbrakk>cplx_rel x y; cplx_rel y z\<rbrakk> \<Longrightarrow> cplx_rel x z"
 
 quotient_type 'a model = "'a free" / cplx_rel
-  morphisms from_model as_model
+  morphisms rep_model abs_model
   apply (rule equivpI)
   unfolding reflp_def symp_def transp_def using cplx_refl cplx_sym cplx_trans by auto
 
-lemma as_model_epic:
-  assumes "f \<circ> as_model = g \<circ> as_model"
+lemma abs_model_epic:
+  assumes "f \<circ> abs_model = g \<circ> abs_model"
   shows "f = g"
 proof
   fix x
-  from assms have "\<And>y. f (as_model y) = g (as_model y)" unfolding comp_def by metis
+  from assms have "\<And>y. f (abs_model y) = g (abs_model y)" unfolding comp_def by metis
   thus "f x = g x" by (metis Quotient_abs_rep Quotient_model)
 qed
 
@@ -405,10 +405,10 @@ lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
   by (rule cplx_Fill_cong)
 
-lemma as_model_From [simp]: "as_model (From x) = to_model x"
+lemma abs_model_From [simp]: "abs_model (From x) = to_model x"
   by transfer simp
 
-lemma as_model_Fill [simp]: "as_model (Fill h d) = fill_model (as_model \<circ> h) d"
+lemma abs_model_Fill [simp]: "abs_model (Fill h d) = fill_model (abs_model \<circ> h) d"
   unfolding comp_def by transfer simp
 
 instantiation model :: (type) cplx
@@ -484,15 +484,15 @@ lemma map_model_fill [simp]: "map_model f (fill_model h d) = fill_model (\<lambd
 lemma coh_map_model: "is_coh (map_model f)"
   unfolding is_coh_def fill_model comp_def apply rule apply rule by transfer simp
 
-definition join_free :: "'a::cplx free \<Rightarrow> 'a"
-  where "join_free = rec_free id (\<lambda>h. fill (snd \<circ> h))"
+definition from_free :: "'a::cplx free \<Rightarrow> 'a"
+  where "from_free = rec_free id (\<lambda>h. fill (snd \<circ> h))"
 
-lemma join_free_From [simp]: "join_free (From x) = x" unfolding join_free_def by simp
+lemma from_free_From [simp]: "from_free (From x) = x" unfolding from_free_def by simp
 
-lemma join_free_Fill [simp]: "join_free (Fill h d) = fill (\<lambda>l. join_free (h l)) d"
-  unfolding join_free_def comp_def by simp
+lemma from_free_Fill [simp]: "from_free (Fill h d) = fill (\<lambda>l. from_free (h l)) d"
+  unfolding from_free_def comp_def by simp
 
-lemma join_free_cong: "cplx_rel x y \<Longrightarrow> join_free x = join_free y"
+lemma from_free_cong: "cplx_rel x y \<Longrightarrow> from_free x = from_free y"
 proof (induction x y rule: cplx_rel.induct)
   case (cplx_sec h l)
   then show ?case by simp
@@ -519,57 +519,63 @@ next
   then show ?case by simp
 qed
 
-lemma join_free_map: "is_coh f \<Longrightarrow> join_free (map_free f x) = f (join_free x)"
+lemma from_free_map: "is_coh f \<Longrightarrow> from_free (map_free f x) = f (from_free x)"
   unfolding is_coh_def comp_def apply (induction x) by simp_all metis
 
-lift_definition join_model :: "'a::cplx model \<Rightarrow> 'a" is join_free
-  by (rule join_free_cong)
+lift_definition from_model :: "'a::cplx model \<Rightarrow> 'a" is from_free
+  by (rule from_free_cong)
 
-lemma join_model_to [simp]: "join_model (to_model x) = x" by transfer simp
-lemma join_model_fill [simp]: "join_model (fill_model h d) = fill (\<lambda>l. join_model (h l)) d"
+lemma from_model_to [simp]: "from_model (to_model x) = x" by transfer simp
+lemma from_model_fill [simp]: "from_model (fill_model h d) = fill (\<lambda>l. from_model (h l)) d"
   by transfer simp
 
-lemma coh_join_model: "is_coh join_model"
+lemma coh_from_model: "is_coh from_model"
   unfolding is_coh_def fill_model comp_def by transfer simp
+
+lemma from_model_comp_map: "is_coh f \<Longrightarrow> from_model \<circ> map_model f = f \<circ> from_model"
+  apply transfer apply rule by simp (rule from_free_map)
+
+abbreviation join_model :: "'a model model \<Rightarrow> 'a model"
+  where "join_model \<equiv> from_model"
 
 lemma to_model_natural: "map_model f \<circ> to_model = to_model \<circ> f"
   apply rule by transfer simp
 
-lemma join_model_comp_map: "is_coh f \<Longrightarrow> join_model \<circ> map_model f = f \<circ> join_model"
-  apply transfer apply rule by simp (rule join_free_map)
-  
 lemma join_model_natural: "join_model \<circ> map_model (map_model f) = map_model f \<circ> join_model"
-  by (rule join_model_comp_map) (rule coh_map_model)
+  by (rule from_model_comp_map) (rule coh_map_model)
+
+lemma from_model_action: "from_model \<circ> map_model from_model = from_model \<circ> join_model"
+  by (rule from_model_comp_map) (rule coh_from_model)
 
 lemma join_model_assoc: "join_model \<circ> map_model join_model = join_model \<circ> join_model"
-  by (rule join_model_comp_map) (rule coh_join_model)
+  by (rule from_model_action)
 
 lemma to_left_unit_join: "join_model \<circ> to_model = id"
-  apply transfer by rule simp
+  by rule simp
 
-lemma join_free_map_to: "join_free (map_free to_model x) = as_model x"
+lemma from_free_map_to: "from_free (map_free to_model x) = abs_model x"
   by (induction x) (simp_all add: fill_model comp_def)
 
 lemma to_right_unit_join: "join_model \<circ> map_model to_model = id"
 proof -
-  have "\<And>x. join_free (map_free to_model x) = as_model x" by (rule join_free_map_to)
-  hence "\<And>x. join_model (as_model (map_free to_model x)) = as_model x"
-    by (simp add: join_model.abs_eq)
-  hence "\<And>x. join_model (map_model to_model (as_model x)) = as_model x"
+  have "\<And>x. from_free (map_free to_model x) = abs_model x" by (rule from_free_map_to)
+  hence "\<And>x. join_model (abs_model (map_free to_model x)) = abs_model x"
+    by (simp add: from_model.abs_eq)
+  hence "\<And>x. join_model (map_model to_model (abs_model x)) = abs_model x"
     by (simp add: map_model.abs_eq)
-  hence "join_model \<circ> map_model to_model \<circ> as_model = id \<circ> as_model" unfolding comp_def by auto
-  thus ?thesis by (rule as_model_epic)
+  hence "join_model \<circ> map_model to_model \<circ> abs_model = id \<circ> abs_model" unfolding comp_def by auto
+  thus ?thesis by (rule abs_model_epic)
 qed
 
 subsection \<open>Every model complex is an algebra over this monad and every coherent morphism is a homomorphism between algebras\<close>
 
-term join_model
+term from_model
 
-thm join_model_assoc
+thm from_model_action
 
-thm to_left_unit_join
+thm from_model_to
 
-thm join_model_comp_map
+thm from_model_comp_map
 
 subsection \<open>Every algebra over this monad is a model complex\<close>
 
