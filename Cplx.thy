@@ -335,7 +335,7 @@ qed
 
 subsection \<open>How complexes with different base arrows relate\<close>
 
-locale relative =
+context
   fixes incl :: "'\<Gamma> \<Rightarrow> '\<Xi>"
     and monic :: "'\<Gamma> \<Rightarrow> \<Lambda>"
     and epic :: "\<Lambda> \<Rightarrow> '\<Gamma>"
@@ -567,13 +567,15 @@ proof -
   thus ?thesis by (rule abs_model_epic)
 qed
 
-subsection \<open>Every model complex is an algebra over this monad and every coherent morphism is a homomorphism between algebras\<close>
+subsection \<open>Every model complex is an algebra over this monad\<close>
 
 term from_model
 
 thm from_model_action
 
 thm from_model_to
+
+subsection \<open>And every coherent morphism is a homomorphism between algebras\<close>
 
 thm from_model_comp_map
 
@@ -625,5 +627,25 @@ proof -
 qed
 
 end
+
+subsection \<open>And every homomorphism between algebras is a coherent morphism between model complexes\<close>
+
+locale model_alg_hom =
+  act: model_alg act + act': model_alg act' for act act' +
+fixes f
+assumes hom: "act' (map_model f x) = f (act x)"
+begin
+
+lemma coh_f: "act'.mfill \<circ> comp f = comp f \<circ> act.mfill"
+  unfolding act.mfill_def act'.mfill_def comp_def fill_model
+proof (rule; rule)
+  fix h :: "\<Lambda> \<Rightarrow> 'a"
+  fix d :: \<Delta>
+  have "act' (fill_model (\<lambda>l. to_model (f (h l))) d) = act' (fill_model (\<lambda>l. map_model f (to_model (h l))) d)"
+    by simp
+  also have "... = act' (map_model f (fill_model (\<lambda>l. to_model (h l)) d))" by simp
+  also have "... = f (act (fill_model (\<lambda>l. to_model (h l)) d))" by (rule hom)
+  finally show "act' (fill_model (\<lambda>l. to_model (f (h l))) d) = f (act (fill_model (\<lambda>l. to_model (h l)) d))" .
+qed
 
 end
