@@ -405,9 +405,7 @@ lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
   by (rule cplx_Fill_cong)
 
-lemma abs_model_From [simp]: "abs_model (From x) = to_model x"
-  by transfer simp
-
+lemma abs_model_From [simp]: "abs_model (From x) = to_model x" by transfer simp
 lemma abs_model_Fill [simp]: "abs_model (Fill h d) = fill_model (abs_model \<circ> h) d"
   unfolding comp_def by transfer simp
 
@@ -488,7 +486,6 @@ definition from_free :: "'a::cplx free \<Rightarrow> 'a"
   where "from_free = rec_free id (\<lambda>h. fill (snd \<circ> h))"
 
 lemma from_free_From [simp]: "from_free (From x) = x" unfolding from_free_def by simp
-
 lemma from_free_Fill [simp]: "from_free (Fill h d) = fill (\<lambda>l. from_free (h l)) d"
   unfolding from_free_def comp_def by simp
 
