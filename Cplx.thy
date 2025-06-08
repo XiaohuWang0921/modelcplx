@@ -646,3 +646,66 @@ proof (rule; rule)
 qed
 
 end
+
+section\<open>Finite colimits in the category of model complexes\<close>
+
+abbreviation inl :: "'a \<Rightarrow> ('a + 'b) free" where "inl a \<equiv> From (Inl a)"
+
+abbreviation inr :: "'b \<Rightarrow> ('a + 'b) free" where "inr b \<equiv> From (Inr b)"
+
+inductive sum_rel :: "[('a::cplx + 'b::cplx) free, ('a + 'b) free] \<Rightarrow> bool" where
+
+(* Both injections are coherent *)
+sum_inl_coh [simp]: "sum_rel (inl (fill h d)) (Fill (\<lambda>l. inl (h l)) d)" |
+sum_inr_coh [simp]: "sum_rel (inr (fill h d)) (Fill (\<lambda>l. inr (h l)) d)" |
+
+(* The usual *)
+sum_sec [simp]: "sum_rel (Fill h (emb l)) (h l)" |
+sum_proj [simp]: "sum_rel (Fill (\<lambda>_. x) d) x" |
+sum_diag [simp]: "sum_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda>l. hh l l) d)" |
+sum_braid [simp]: "sum_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
+
+sum_Fill_cong [simp]: "(\<And>l. sum_rel (h l) (h' l)) \<Longrightarrow> sum_rel (Fill h d) (Fill h' d)" |
+
+sum_refl [simp]: "sum_rel x x" |
+sum_sym: "sum_rel x y \<Longrightarrow> sum_rel y x" |
+sum_trans: "\<lbrakk>sum_rel x y; sum_rel y z\<rbrakk> \<Longrightarrow> sum_rel x z"
+
+quotient_type (overloaded) ('a, 'b) cp = "('a::cplx + 'b::cplx) free" / sum_rel
+  morphisms rep_cp abs_cp
+  apply (rule equivpI)
+  unfolding reflp_def symp_def transp_def using sum_refl sum_sym sum_trans by auto
+
+lift_definition fill_cp :: "[\<Lambda> \<Rightarrow> ('a::cplx, 'b::cplx) cp, \<Delta>] \<Rightarrow> ('a, 'b) cp" is Fill
+  by (rule sum_Fill_cong)
+
+instantiation cp :: (cplx, cplx) cplx
+begin
+
+definition fill_cp: "fill = fill_cp"
+
+instance proof
+  fix h :: "\<Lambda> \<Rightarrow> ('a, 'b) cp"
+  fix l :: \<Lambda>
+  show "fill h (emb l) = h l" unfolding fill_cp by transfer (rule sum_sec)
+next
+  fix x :: "('a, 'b) cp"
+  fix d :: \<Delta>
+  show "fill (\<lambda>_. x) d = x" unfolding fill_cp by transfer (rule sum_proj)
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> ('a, 'b) cp"
+  fix d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d"
+    unfolding fill_cp by transfer (rule sum_diag)
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> ('a, 'b) cp"
+  fix d' d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'"
+    unfolding fill_cp by transfer (rule sum_braid)
+qed
+
+lift_definition il :: "'a::cplx \<Rightarrow> ('a, 'b::cplx) cp" is "\<lambda>a. From (Inl a)" .
+
+lift_definition ir :: "'b::cplx \<Rightarrow> ('a::cplx, 'b) cp" is "\<lambda>b. From (Inr b)" .
+
+end
