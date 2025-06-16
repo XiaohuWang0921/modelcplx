@@ -379,7 +379,7 @@ cplx_diag [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda
 cplx_braid [simp]: "cplx_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
 
 (* Ensures that Fill respects this relation, so the filler on the quotient is well defined *)
-cplx_Fill_cong [simp]: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
+cplx_cong_Fill [simp]: "(\<And>l. cplx_rel (h l) (h' l)) \<Longrightarrow> cplx_rel (Fill h d) (Fill h' d)" |
 
 (* Finally, ensures that we indeed have an equivalence relation *)
 cplx_refl [simp]: "cplx_rel x x" |
@@ -403,7 +403,7 @@ qed
 lift_definition to_model :: "'a \<Rightarrow> 'a model" is From .
 
 lift_definition fill_model :: "[\<Lambda> \<Rightarrow> 'a model, \<Delta>] \<Rightarrow> 'a model" is Fill
-  by (rule cplx_Fill_cong)
+  by (rule cplx_cong_Fill)
 
 lemma abs_model_From [simp]: "abs_model (From x) = to_model x" by transfer simp
 lemma abs_model_Fill [simp]: "abs_model (Fill h d) = fill_model (abs_model \<circ> h) d"
@@ -437,7 +437,7 @@ end
 
 subsection \<open>The operation of taking the free model complex of an object is a monad\<close>
 
-lemma map_free_cong: "cplx_rel x y \<Longrightarrow> cplx_rel (map_free f x) (map_free f y)"
+lemma cong_map_free: "cplx_rel x y \<Longrightarrow> cplx_rel (map_free f x) (map_free f y)"
 proof (induction x y rule: cplx_rel.induct)
   case (cplx_sec h l)
   then show ?case using cplx_rel.cplx_sec[of "map_free f \<circ> h" l] by simp
@@ -451,7 +451,7 @@ next
   case (cplx_braid hh d' d)
   then show ?case by (simp add: comp_def)
 next
-  case (cplx_Fill_cong h h' d)
+  case (cplx_cong_Fill h h' d)
   then show ?case by (simp add: comp_def)
 next
   case (cplx_refl x)
@@ -465,7 +465,7 @@ next
 qed
 
 lift_definition map_model :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a model \<Rightarrow> 'b model" is map_free
-  by (rule map_free_cong)
+  by (rule cong_map_free)
 
 lemma map_model_comp: "map_model (f \<circ> g) = map_model f \<circ> map_model g"
   apply rule by transfer (simp add: free.map_comp)
@@ -489,7 +489,7 @@ lemma from_free_From [simp]: "from_free (From x) = x" unfolding from_free_def by
 lemma from_free_Fill [simp]: "from_free (Fill h d) = fill (\<lambda>l. from_free (h l)) d"
   unfolding from_free_def comp_def by simp
 
-lemma from_free_cong: "cplx_rel x y \<Longrightarrow> from_free x = from_free y"
+lemma cong_from_free: "cplx_rel x y \<Longrightarrow> from_free x = from_free y"
 proof (induction x y rule: cplx_rel.induct)
   case (cplx_sec h l)
   then show ?case by simp
@@ -503,7 +503,7 @@ next
   case (cplx_braid hh d' d)
   then show ?case by simp (rule braid)
 next
-  case (cplx_Fill_cong h h' d)
+  case (cplx_cong_Fill h h' d)
   then show ?case by simp
 next
   case (cplx_refl x)
@@ -520,7 +520,7 @@ lemma from_free_map: "is_coh f \<Longrightarrow> from_free (map_free f x) = f (f
   unfolding is_coh_def comp_def apply (induction x) by simp_all metis
 
 lift_definition from_model :: "'a::cplx model \<Rightarrow> 'a" is from_free
-  by (rule from_free_cong)
+  by (rule cong_from_free)
 
 lemma from_model_to [simp]: "from_model (to_model x) = x" by transfer simp
 lemma from_model_fill [simp]: "from_model (fill_model h d) = fill (\<lambda>l. from_model (h l)) d"
@@ -656,8 +656,8 @@ abbreviation inr :: "'b \<Rightarrow> ('a + 'b) free" where "inr b \<equiv> From
 inductive sum_rel :: "[('a::cplx + 'b::cplx) free, ('a + 'b) free] \<Rightarrow> bool" where
 
 (* Both injections are coherent *)
-sum_inl_coh [simp]: "sum_rel (inl (fill h d)) (Fill (\<lambda>l. inl (h l)) d)" |
-sum_inr_coh [simp]: "sum_rel (inr (fill h d)) (Fill (\<lambda>l. inr (h l)) d)" |
+sum_coh_inl [simp]: "sum_rel (Fill (\<lambda>l. inl (h l)) d) (inl (fill h d))" |
+sum_coh_inr [simp]: "sum_rel (Fill (\<lambda>l. inr (h l)) d) (inr (fill h d))" |
 
 (* The usual *)
 sum_sec [simp]: "sum_rel (Fill h (emb l)) (h l)" |
@@ -665,7 +665,7 @@ sum_proj [simp]: "sum_rel (Fill (\<lambda>_. x) d) x" |
 sum_diag [simp]: "sum_rel (Fill (\<lambda>l. Fill (hh l) d) d) (Fill (\<lambda>l. hh l l) d)" |
 sum_braid [simp]: "sum_rel (Fill (\<lambda>l. Fill (hh l) d') d) (Fill (\<lambda>l. Fill (\<lambda>l'. hh l' l) d) d')" |
 
-sum_Fill_cong [simp]: "(\<And>l. sum_rel (h l) (h' l)) \<Longrightarrow> sum_rel (Fill h d) (Fill h' d)" |
+sum_cong_Fill [simp]: "(\<And>l. sum_rel (h l) (h' l)) \<Longrightarrow> sum_rel (Fill h d) (Fill h' d)" |
 
 sum_refl [simp]: "sum_rel x x" |
 sum_sym: "sum_rel x y \<Longrightarrow> sum_rel y x" |
@@ -677,7 +677,7 @@ quotient_type (overloaded) ('a, 'b) cp = "('a::cplx + 'b::cplx) free" / sum_rel
   unfolding reflp_def symp_def transp_def using sum_refl sum_sym sum_trans by auto
 
 lift_definition fill_cp :: "[\<Lambda> \<Rightarrow> ('a::cplx, 'b::cplx) cp, \<Delta>] \<Rightarrow> ('a, 'b) cp" is Fill
-  by (rule sum_Fill_cong)
+  by (rule sum_cong_Fill)
 
 instantiation cp :: (cplx, cplx) cplx
 begin
@@ -704,8 +704,73 @@ next
     unfolding fill_cp by transfer (rule sum_braid)
 qed
 
+end
+
 lift_definition il :: "'a::cplx \<Rightarrow> ('a, 'b::cplx) cp" is "\<lambda>a. From (Inl a)" .
 
 lift_definition ir :: "'b::cplx \<Rightarrow> ('a::cplx, 'b) cp" is "\<lambda>b. From (Inr b)" .
+
+lemma coh_il: "is_coh il" unfolding is_coh_def comp_def fill_cp
+  apply rule apply rule by transfer simp
+
+lemma coh_ir: "is_coh ir" unfolding is_coh_def comp_def fill_cp
+  apply rule apply rule by transfer simp
+
+definition case_sum_free :: "['a \<Rightarrow> 'c::cplx, 'b \<Rightarrow> 'c, ('a + 'b) free] \<Rightarrow> 'c"
+  where "case_sum_free f g x = rec_free (case_sum f g) (\<lambda>h. fill (snd \<circ> h)) x"
+
+lemma case_sum_free_inl [simp]: "case_sum_free f g (inl a) = f a"
+  unfolding case_sum_free_def by simp
+lemma case_sum_free_inr [simp]: "case_sum_free f g (inr b) = g b"
+  unfolding case_sum_free_def by simp
+lemma case_sum_free_Fill [simp]: "case_sum_free f g (Fill h d) = fill (\<lambda>l. case_sum_free f g (h l)) d"
+  unfolding case_sum_free_def comp_def by simp
+
+lemma cong_case_sum_free:
+  assumes "is_coh f" and "is_coh g"
+  shows "sum_rel x y \<Longrightarrow> case_sum_free f g x = case_sum_free f g y"
+proof (induction x y rule: sum_rel.induct)
+  case (sum_coh_inl h d)
+  then show ?case using assms unfolding is_coh_def comp_def by simp metis
+next
+  case (sum_coh_inr h d)
+  then show ?case using assms unfolding is_coh_def comp_def by simp metis
+next
+  case (sum_sec h l)
+  then show ?case by simp
+next
+  case (sum_proj x d)
+  then show ?case by simp
+next
+  case (sum_diag hh d)
+  then show ?case by simp
+next
+  case (sum_braid hh d' d)
+  then show ?case by simp (rule braid)
+next
+  case (sum_cong_Fill h h' d)
+  then show ?case by simp
+next
+  case (sum_refl x)
+  then show ?case by simp
+next
+  case (sum_sym x y)
+  then show ?case by simp
+next
+  case (sum_trans x y z)
+  then show ?case by simp
+qed
+
+lift_definition case_cp :: "['a::cplx \<rightarrow> 'c::cplx, 'b::cplx \<rightarrow> 'c, ('a, 'b) cp] \<Rightarrow> 'c" is case_sum_free
+  by (rule cong_case_sum_free)
+
+lemma coh_case_cp: "is_coh (case_cp f g)" unfolding is_coh_def comp_def fill_cp
+  apply rule apply rule by transfer simp
+
+lemma case_cp_unique:
+  assumes "is_coh f" and "is_coh g" and "is_coh h"
+  assumes "h \<circ> il = f" and "h \<circ> ir = g"
+  shows "h = case_cp (well_mor f) (well_mor g)"
+  sorry
 
 end
