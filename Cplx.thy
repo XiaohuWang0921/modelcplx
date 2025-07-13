@@ -104,6 +104,31 @@ qed
 
 end
 
+instantiation unit :: cplx
+begin
+
+definition fill_unit: "fill _ _ = ()"
+
+instance proof
+  fix h :: "\<Lambda> \<Rightarrow> unit"
+  fix l :: \<Lambda>
+  show "fill h (emb l) = h l" by simp
+next
+  fix x :: unit
+  fix d :: \<Delta>
+  show "fill (\<lambda>_. x) d = x" by simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> unit"
+  fix d :: \<Delta>
+  show "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" by simp
+next
+  fix hh :: "[\<Lambda>, \<Lambda>] \<Rightarrow> unit"
+  fix d d' :: \<Delta>
+  show "fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d' = fill (\<lambda>l. fill (hh l) d') d" by simp
+qed
+
+end
+
 instantiation prod :: (cplx, cplx) cplx
 begin
 
