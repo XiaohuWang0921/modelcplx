@@ -65,11 +65,11 @@ subsection \<open>Definition\<close>
 typedecl \<Delta>
 typedecl \<Lambda>
 
-axiomatization emb :: "\<Lambda> \<Rightarrow> \<Delta>"
+axiomatization \<iota> :: "\<Lambda> \<Rightarrow> \<Delta>"
 
 class cplx =
   fixes fill :: "[\<Lambda> \<Rightarrow> 'a, \<Delta>] \<Rightarrow> 'a"
-  assumes sec [simp]: "fill h (emb l) = h l"
+  assumes sec [simp]: "fill h (\<iota> l) = h l"
   assumes proj [simp]: "fill (\<lambda>_. x) d = x" (* Weakening *)
   assumes diag [simp]: "fill (\<lambda>l. fill (hh l) d) d = fill (\<lambda>l. hh l l) d" (* Contraction *)
   assumes braid: "fill (\<lambda>l. fill (hh l) d') d = fill (\<lambda>l. fill (\<lambda>l'. hh l' l) d) d'" (* Permutation *)
@@ -85,7 +85,7 @@ definition fill_fun: "fill h d x = fill (flip h x) d"
 instance proof
   fix h :: "[\<Lambda>, 'a] \<Rightarrow> 'b"
   fix l :: \<Lambda>
-  show "fill h (emb l) = h l" unfolding fill_fun by simp
+  show "fill h (\<iota> l) = h l" unfolding fill_fun by simp
 next
   fix f :: "'a \<Rightarrow> 'b"
   fix d :: \<Delta>
@@ -112,7 +112,7 @@ definition fill_unit: "fill _ _ = ()"
 instance proof
   fix h :: "\<Lambda> \<Rightarrow> unit"
   fix l :: \<Lambda>
-  show "fill h (emb l) = h l" by simp
+  show "fill h (\<iota> l) = h l" by simp
 next
   fix x :: unit
   fix d :: \<Delta>
@@ -137,7 +137,7 @@ definition fill_prod: "fill h d = (fill (fst \<circ> h) d, fill (snd \<circ> h) 
 instance proof
   fix h :: "\<Lambda> \<Rightarrow> 'a \<times> 'b"
   fix l :: \<Lambda>
-  show "fill h (emb l) = h l"
+  show "fill h (\<iota> l) = h l"
     unfolding fill_prod by simp
 next
   fix x :: "'a \<times> 'b"
@@ -302,7 +302,7 @@ definition fill_mor: "fill = fill_mor"
 instance proof
   fix h :: "\<Lambda> \<Rightarrow> 'a \<rightarrow> 'b"
   fix l :: \<Lambda>
-  show "fill h (emb l) = h l" unfolding fill_mor by transfer simp
+  show "fill h (\<iota> l) = h l" unfolding fill_mor by transfer simp
 next
   fix f :: "'a \<rightarrow> 'b"
   fix d :: \<Delta>
@@ -366,7 +366,7 @@ context
     and epic :: "\<Lambda> \<Rightarrow> '\<Gamma>"
     and bottom :: "'\<Xi> \<Rightarrow> \<Delta>"
   assumes inv [simp]: "epic (monic a) = a"
-    and square [simp]: "bottom (incl a) = emb (monic a)"
+    and square [simp]: "bottom (incl a) = \<iota> (monic a)"
 begin
 
 definition ifill :: "['\<Gamma> \<Rightarrow> 'a, '\<Xi>] \<Rightarrow> 'a::cplx"
